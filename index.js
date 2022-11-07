@@ -19,8 +19,8 @@ if (config.https) {
     cert: fs.readFileSync(config.certPath),
   }, server);
 
-	server.listen(8080, '0.0.0.0', () => console.log('HTTP successful on port ' + config.port));
-  httpsServer.listen(8443, '0.0.0.0', () => console.log('HTTPS successful on port 443.'));
+	server.listen(config.httpPort, '0.0.0.0', () => console.log('HTTP successful on port ' + config.httpPort));
+  httpsServer.listen(config.httpsPort, '0.0.0.0', () => console.log('HTTPS successful on port ' + config.httpsPort));
 } else {
-  server.listen(config.port, '0.0.0.0', () => console.log('HTTP successful on port ' + config.port));
+  server.listen(config.httpPort, '0.0.0.0', () => console.log('HTTP successful on port ' + config.httpPort));
 }
