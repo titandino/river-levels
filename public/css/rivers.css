@@ -11,7 +11,7 @@
     overflow: hidden;
 } */
 
-#map-container, #output-container {
+#chart-container, #output-container {
     height: 80vh;
 }
 
@@ -209,7 +209,7 @@ input.leaflet-control-custom {
     color: white;
 }
 
-#map-container {
+#chart-container {
     padding: 0;
 }
 
