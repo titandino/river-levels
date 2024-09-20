@@ -1,12 +1,14 @@
-const express = require('express');
-const moment = require('moment');
-const axios = require('axios');
-const { Parser } = require('xml2js');
+import express from 'express';
+import moment from 'moment';
+import fetch from 'node-fetch';
 let router = express.Router();
+
+const SKYKOMISH = 'GLBW1';
+const SNOHOMISH = 'SNAW1'
 
 router.get('/data', async (req, res, next) => {
     let rivers = {};
-    rivers.skykomish = await getRiverData('https://water.weather.gov/ahps2/hydrograph_to_xml.php?gage=glbw1&output=xml');
+    rivers.skykomish = await getRiverData(SKYKOMISH);
     rivers.skykomish.annotations = {
         getABoat: {
             type: 'line',
@@ -54,41 +56,40 @@ router.get('/data', async (req, res, next) => {
             value: 7
         }
     };
-    rivers.snohomish = await getRiverData('https://water.weather.gov/ahps2/hydrograph_to_xml.php?gage=mrow1&output=xml');
+    rivers.snohomish = await getRiverData(SNOHOMISH);
     res.json(rivers);
 });
 
-async function getRiverData(url) {
-    let xmlRes = await axios.get(url);
-    if (!xmlRes.data)
-        return res.json({ error: 'Error parsing data from source.' });
-    let parser = new Parser({ explicitArray: false });
-    let riverData = await parser.parseStringPromise(xmlRes.data);
-    if (!riverData || !riverData.site || !riverData.site.observed || !riverData.site.observed || !riverData.site.observed.datum)
-        return res.json({ error: 'Observed data is missing.' });
+async function getRiverData(gaugeId) {
+    let response = await fetch(`https://api.water.noaa.gov/nwps/v1/gauges/${gaugeId}/stageflow`);
+    if (!response)
+        throw new Error('Error parsing data from source.')
+    let riverData = await response.json();
+    if (!riverData || !riverData.observed)
+        throw new Error('Observed data is missing.')
     let dataPoints = [];
-    let observed = riverData.site.observed.datum;
+    let observed = riverData.observed.data;
     for (let i = 0; i < observed.length; i++) {
         if (!observed[i])
             continue;
         dataPoints.push({
             prediction: false,
-            timeString: moment(observed[i].valid._).utc().local().format('DD/MM/YYYY hh:mm:ss'),
-            timestamp: Number(moment(observed[i].valid._).utc().local().valueOf()),
-            level: observed[i].primary._,
-            flow: observed[i].secondary._
+            timeString: moment(observed[i].validTime).utc().local().format('DD/MM/YYYY hh:mm:ss'),
+            timestamp: Number(moment(observed[i].validTime).utc().local().valueOf()),
+            level: observed[i].primary,
+            flow: observed[i].secondary
         });
     }
-    let forecast = riverData.site.forecast.datum;
+    let forecast = riverData.forecast.data;
     for (let i = 0; i < forecast.length; i++) {
         if (!forecast[i])
             continue;
         dataPoints.push({
             prediction: true,
-            timeString: moment(forecast[i].valid._).utc().local().format('DD/MM/YYYY hh:mm:ss'),
-            timestamp: Number(moment(forecast[i].valid._).utc().local().valueOf()),
-            level: forecast[i].primary._,
-            flow: forecast[i].secondary._
+            timeString: moment(forecast[i].validTime).utc().local().format('DD/MM/YYYY hh:mm:ss'),
+            timestamp: Number(moment(forecast[i].validTime).utc().local().valueOf()),
+            level: forecast[i].primary,
+            flow: forecast[i].secondary
         });
     }
     let data = {
@@ -152,4 +153,4 @@ async function getRiverData(url) {
     };
 }
 
-module.exports = router;
+export default router;
