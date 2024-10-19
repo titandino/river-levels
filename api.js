@@ -70,7 +70,7 @@ async function getRiverData(gaugeId) {
     let dataPoints = [];
     let observed = riverData.observed.data;
     for (let i = 0; i < observed.length; i++) {
-        if (!observed[i])
+        if (!observed[i] || isOutlier(observed[i].primary) || isOutlier(observed[i].secondary))
             continue;
         dataPoints.push({
             prediction: false,
@@ -82,7 +82,7 @@ async function getRiverData(gaugeId) {
     }
     let forecast = riverData.forecast.data;
     for (let i = 0; i < forecast.length; i++) {
-        if (!forecast[i])
+        if (!forecast[i] || isOutlier(forecast[i].primary) || isOutlier(forecast[i].secondary))
             continue;
         dataPoints.push({
             prediction: true,
@@ -151,6 +151,10 @@ async function getRiverData(gaugeId) {
         minFlow, maxFlow,
         minLevel, maxLevel
     };
+}
+
+function isOutlier(input) {
+    return input > 5000 || input < -5000;
 }
 
 export default router;
